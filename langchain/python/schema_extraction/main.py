@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from langchain import PromptTemplate, LLMChain
 from langchain.chat_models import ChatOpenAI
 from pydantic import Field
+from langfuse.callback import CallbackHandler
 
 from schema_extractor_memory import SchemaExtractorMemory, ExtractorSchema
 
@@ -67,11 +68,14 @@ def main():
     llm_chat = ChatOpenAI(temperature=0, model="gpt-3.5-turbo-0613")
     llm_extraction = ChatOpenAI(temperature=0, model="gpt-4-0613")
 
+    handler = CallbackHandler("pk-lf-*******","sk-lf-*******", None)
+
     memory = SchemaExtractorMemory(
         model_schema=Order(),
         llm=llm_extraction,
         input_key="input",
         memory_key="chat_history",
+        callbacks=[handler],
     )
 
     sales_template = """
@@ -110,6 +114,10 @@ Human's response: {input}
         "hello, I'm Jane!",
         "I'd like to buy a pair of Puma Suede Classics.",
         "I'd prefer them to be black.",
+# The code snippet you provided is simulating a conversation between a shoe sales representative and a
+# customer. The customer provides information about their shoe preferences, personal details, and
+# shipping address. The conversation is processed using a language model to extract and store the
+# relevant information in a structured format.
         "Yes. I'm a size 9",
         "Jane Austin",
         "jane@sanditon.com",
@@ -125,7 +133,8 @@ Human's response: {input}
                 {
                     "input": message,
                     "order_details": memory.model.dict(exclude_unset=True),
-                }
+                },
+                callbacks=[handler]
             )
         )
 

@@ -39,12 +39,14 @@ class SchemaExtractorMemory(ConversationBufferMemory):
     model: ExtractorSchema | None = None
     llm: ChatOpenAI | None = None
     chain: Chain | None = None
+    callbacks: Any
 
-    def __init__(self, model_schema: ExtractorSchema, llm: ChatOpenAI, **kwargs: Any):
+    def __init__(self, model_schema: ExtractorSchema, llm: ChatOpenAI, callbacks, **kwargs: Any):
         super().__init__(**kwargs)
 
         self.model = model_schema
         self.llm = llm
+        self.callbacks = callbacks
         self.chain = create_extraction_chain_pydantic(
             pydantic_schema=type(model_schema), llm=llm
         )
@@ -73,7 +75,7 @@ class SchemaExtractorMemory(ConversationBufferMemory):
 
     def _extract_model_values(self, input_str: str) -> None:
         """Extract values from inputs to be used in model."""
-        model_values = self.chain.run(input_str)
+        model_values = self.chain.run(input=input_str, verbose=True, callbacks=self.callbacks)
 
         model_values = self._get_first_model_value(model_values)  # type: ignore
 
